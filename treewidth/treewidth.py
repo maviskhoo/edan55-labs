@@ -1,4 +1,5 @@
 import time
+import threading
 from pathlib import Path
 
 class treewidth():
@@ -27,7 +28,10 @@ class treewidth():
         self.graph = [[] for _ in range(self.num_nodes + 1)]
         
         for _ in range(0, self.num_edges):
-            u, v = gr_file.readline().split()
+            line = gr_file.readline()
+            while line[0] == 'c':
+                line = gr_file.readline()
+            u, v = line.split()
              
             self.graph[int(u)].append(int(v))
             self.graph[int(v)].append(int(u))
@@ -49,7 +53,7 @@ class treewidth():
             self.tree_structure[int(v)].append(int(u))
             
             line = td_file.readline()
-        
+    
     def __call__(self):
         self.in_tree = [0 for _ in range(self.num_vertices + 1)]
         self.tree = [[] for _ in range(self.num_vertices + 1)]
@@ -124,11 +128,21 @@ class treewidth():
                 parent_bitstrings = self.calculate_mis_scores(parent_bitstrings, child_bitstrings, bag, child)
             return parent_bitstrings
         
-        
+
+# run for only 60 seconds  
+def run_with_timeout(func, timeout):
+    def target():
+        func()
+
+    thread = threading.Thread(target=target)
+    thread.start()
+    thread.join(timeout)
+    if thread.is_alive():
+        raise TimeoutError()
+
         
 if __name__ == "__main__":
     files = Path("treewidth\data").glob('*')
-    done = 0
     prevfile = "nothing"
     largest_n_in_a_min = [0,0,0]
     largest_w_in_a_min = [0,0,0]
@@ -137,17 +151,11 @@ if __name__ == "__main__":
         file = str(file)[:-3]
         file_name = file.split('\\')[2]
         if prevfile == file_name:
-            td_file = open(file + ".td", 'r')
-            line = td_file.readline()
-
-            if line[0] == 'c':
-                runtime = float(line.split()[-1])
-
-            if runtime <= 60 and runtime>0:
-                print(file_name)
+            print(file_name)
+            try:
                 start_time = time.time()
                 tw = treewidth(file)
-                tw()
+                run_with_timeout(tw, 60)  # Timeout set to 60 seconds
                 end_time = time.time()
                 print("Runtime =","%s seconds" % (end_time - start_time))
                 print("\n")
@@ -155,11 +163,14 @@ if __name__ == "__main__":
                     largest_n_in_a_min = [file_name, tw.num_nodes, tw.width]
                 if tw.width > largest_w_in_a_min[1]:
                     largest_w_in_a_min = [file_name, tw.num_nodes, tw.width]
+            except TimeoutError:
+                print("Skipping", file_name, "as it took too long to process.\n\n")
 
         prevfile = file_name
      
 
-
-    print("Largest n = \n" + largest_n_in_a_min + "\n")
-    print("Largest w = \n" + largest_w_in_a_min + "\n")
+    print("Largest n = \n")
+    print(largest_n_in_a_min[0] + " n = " + str(largest_n_in_a_min[1]) + " w = " + str(largest_n_in_a_min[2]) + "\n")
+    print("Largest w = \n")
+    print(largest_w_in_a_min[0] + " n = " + str(largest_w_in_a_min[1]) + " w = " + str(largest_w_in_a_min[2]) + "\n")
     
