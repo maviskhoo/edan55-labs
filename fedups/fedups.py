@@ -119,7 +119,8 @@ def check_possible (starting_state, ending_state, visited = None):
 
 # ==================== MAIN ====================
 
-filename = "toy"
+filename = "small"
+num_of_montecarlo_runs = 50000
 f = open(f"fedups/data/{filename}.in","r")
 
 N, M, H, F, P = map(int, f.readline().split())
@@ -154,23 +155,36 @@ f.close()
 
 if check_possible(F,H) == 1:
     print("FedUPS")
-    time_fedups = run_monte_carlo(10000, F, H)
+    time_fedups = run_monte_carlo(num_of_montecarlo_runs, F, H)
     print("Monte-Carlo Algo: " + str(time_fedups))
 
+    # Calculate estimated delivery time E(G)
     A_fedups,b_fedups = build_matrix(F,H,"f")
     results_fedups = markov(A_fedups,b_fedups)
-    print("Markov Algo: " + str(results_fedups[F]))
+    estimated_time_fedups = results_fedups[F]
+    print("Markov Algo: " + str(estimated_time_fedups))
+
+    # Calculate relative accuracy
+    relative_accuracy_fedups = estimated_time_fedups - time_fedups
+    relative_accuracy_fedups = relative_accuracy_fedups/estimated_time_fedups
+    print("Relative Accuracy: " + str(relative_accuracy_fedups))
 else:
     print("FedUps tried to deliver your package, but you were not at home")
 
 if check_possible(P,H) == 1:
     print("PostNHL")
-    time_postNHL = run_monte_carlo(10, P, H)
+    time_postNHL = run_monte_carlo(num_of_montecarlo_runs, P, H)
     print("Monte-Carlo Algo: " + str(time_postNHL))
 
     H = H_original
-    A_postNhl,b_postNhl = build_matrix(P,H,"p")
-    results_postNhl = markov(A_postNhl,b_postNhl)
-    print("Markov Algo: " + str(results_postNhl[P]))
+    A_postNHL,b_postNHL = build_matrix(P,H,"p")
+    results_postNHL = markov(A_postNHL,b_postNHL)
+    estimated_time_postNHL = results_postNHL[P]
+    print("Markov Algo: " + str(estimated_time_postNHL))
+
+    # Calculate relative accuracy
+    relative_accuracy_postNHL = estimated_time_postNHL - time_postNHL
+    relative_accuracy_postNHL = relative_accuracy_postNHL/estimated_time_postNHL
+    print("Relative Accuracy: " + str(relative_accuracy_postNHL))
 else:
     print("PostNHL tried to deliver your package, but you were not at home")
