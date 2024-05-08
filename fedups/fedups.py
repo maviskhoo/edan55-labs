@@ -1,5 +1,6 @@
 import numpy as np
 import copy
+import time
 
 # ==================== FUNCTIONS ====================
 def monte_carlo(starting_state, ending_state):
@@ -55,6 +56,9 @@ def markov(pMatrix, time):
 
 def build_matrix(start, finish, type):
     
+    global F
+    global P
+
     taken = build_path(start)
     
     l = len(taken)
@@ -77,8 +81,6 @@ def build_matrix(start, finish, type):
                 F = x
             else:
                 P = x
-        if v == finish:
-            H = x
         vect = copy.copy(p_matrix[v])
         for y in not_in_path:
             vect = np.delete(vect, y)        
@@ -120,11 +122,10 @@ def check_possible (starting_state, ending_state, visited = None):
 # ==================== MAIN ====================
 
 filename = "small"
-num_of_montecarlo_runs = 50000
+num_of_montecarlo_runs = 25000
 f = open(f"fedups/data/{filename}.in","r")
 
 N, M, H, F, P = map(int, f.readline().split())
-H_original = H
 
 # Create N x N probability matrix - Represent the probability for state transition
 p_matrix = [[float(0) for _ in range(N)] for _ in range(N)]
@@ -155,7 +156,10 @@ f.close()
 
 if check_possible(F,H) == 1:
     print("FedUPS")
+    start_time = time.time()
     time_fedups = run_monte_carlo(num_of_montecarlo_runs, F, H)
+    end_time = time.time()
+    print("Monte-Carlo Runtime =","%s seconds" % (end_time - start_time))
     print("Monte-Carlo Algo: " + str(time_fedups))
 
     # Calculate estimated delivery time E(G)
@@ -172,11 +176,14 @@ else:
     print("FedUps tried to deliver your package, but you were not at home")
 
 if check_possible(P,H) == 1:
+    print("\n")
     print("PostNHL")
+    start_time = time.time()
     time_postNHL = run_monte_carlo(num_of_montecarlo_runs, P, H)
+    end_time = time.time()
+    print("Monte-Carlo Runtime =","%s seconds" % (end_time - start_time))
     print("Monte-Carlo Algo: " + str(time_postNHL))
 
-    H = H_original
     A_postNHL,b_postNHL = build_matrix(P,H,"p")
     results_postNHL = markov(A_postNHL,b_postNHL)
     estimated_time_postNHL = results_postNHL[P]
